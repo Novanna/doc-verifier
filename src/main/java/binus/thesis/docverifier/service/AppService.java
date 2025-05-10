@@ -7,5 +7,5 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface AppService {
 
-    ResponseEntity<ResponseModel> doVerification (MultipartFile docFile, String userId, String requestId);
+    ResponseEntity<ResponseModel> doVerification (MultipartFile docFile, String requestId, String docType);
 }

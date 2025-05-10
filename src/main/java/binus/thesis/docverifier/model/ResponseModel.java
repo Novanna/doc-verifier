@@ -2,9 +2,11 @@ package binus.thesis.docverifier.model;
 
 import lombok.Data;
 
+import java.util.Map;
+
 @Data
 public class ResponseModel {
     String responseId;
-    String code;
-    String message;
+    String docType;
+    Map<String, Boolean> parameters;
 }

@@ -9,7 +9,7 @@ public class RequestModel {
     @NonNull
     String requestId;
     @NonNull
-    String userId;
-    @NonNull
     private MultipartFile docFile;
+    @NonNull
+    String docType;
 }

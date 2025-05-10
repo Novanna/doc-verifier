@@ -20,7 +20,7 @@ public class AppController {
     @PostMapping(value = "/doc-verification", consumes = "multipart/form-data", produces = "application/json")
     public ResponseEntity<ResponseModel> getTransactions(@RequestParam("docFile") MultipartFile docFile,
                                                          @RequestParam("requestId") String requestId,
-                                                         @RequestParam("userId") String userId) {
-        return appService.doVerification(docFile, userId, requestId);
+                                                         @RequestParam("docType") String docType) {
+        return appService.doVerification(docFile, requestId, docType);
     }
 }
