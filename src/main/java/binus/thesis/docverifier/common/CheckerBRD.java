@@ -25,15 +25,7 @@ public class CheckerBRD extends Helper {
                 CompletableFuture.supplyAsync(() -> validateApprovalBRD(document)); //[2]
         CompletableFuture<Boolean> tocValidation =
                 CompletableFuture.supplyAsync(() -> validateTableOfContentBRD(document)); //[3]
-        //--------------------------------------------------
-//        CompletableFuture<List<Map<Object, Object>>> finalTableOfContent =
-//                tocValidation.thenApply(valid -> {
-//                    if (valid) {
-//                        return collectContent(document);
-//                    } else {
-//                        return Collections.emptyList();
-//                    }
-//                });
+
         CompletableFuture<List<Map<Object, Object>>> finalTableOfContent =
                 tocValidation.thenCompose(valid -> {
                     if (valid) {
