@@ -18,11 +18,11 @@ public class CheckerUAT extends Helper {
         log.info(">>>>>>>>> [UAT DOCUMENT ON CHECK] <<<<<<<<<<");
         // Execute tasks concurrently
         CompletableFuture<Boolean> logoValidation =
-                CompletableFuture.supplyAsync(() -> validateLogo(document, "UAT")); //[1]
+                CompletableFuture.supplyAsync(() -> validateLogo(document, "UAT"), ocrExecutor); //[1]
         CompletableFuture<Boolean> approvalValidation =
-                CompletableFuture.supplyAsync(() -> validateApprovalUAT(document)); //[2]
+                CompletableFuture.supplyAsync(() -> validateApprovalUAT(document), ocrExecutor); //[2]
         CompletableFuture<Boolean> tocValidation =
-                CompletableFuture.supplyAsync(() -> validateTableOfContentUAT(document)); //[3]
+                CompletableFuture.supplyAsync(() -> validateTableOfContentUAT(document), ocrExecutor); //[3]
 
         CompletableFuture<List<Map<Object, Object>>> finalTableOfContent =
                 tocValidation.thenCompose(valid -> {
@@ -216,7 +216,7 @@ public class CheckerUAT extends Helper {
                     "TABLE OF CONTENT", "HEADER_CONTENT_UAT", document,
                     new Rectangle2D.Double(180.0, 65.0, 250.0, 45.0));
             String tocContent = ocrProcessResult(document,
-                    tocPage, "CONTENT_UAT",
+                    tocPage, "CONTENTUAT",
                     new Rectangle2D.Double(54.50, 90.38, 482.10, 604.10));
 
             tocContent = tocContent.replaceAll("[\\r\\n]+", "\n");  // normalize line breaks

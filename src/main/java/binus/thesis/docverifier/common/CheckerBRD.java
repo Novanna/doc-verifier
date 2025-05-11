@@ -8,23 +8,24 @@ import org.springframework.stereotype.Component;
 import java.awt.geom.Rectangle2D;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Slf4j
 @Component
 public class CheckerBRD extends Helper {
-
     public Map<String, Boolean> processBRD(PDDocument document) throws JsonProcessingException {
         log.info(">>>>>>>>> [BRD DOCUMENT ON CHECK] <<<<<<<<<<");
 
         // Execute tasks concurrently
         CompletableFuture<Boolean> logoValidation =
-                CompletableFuture.supplyAsync(() -> validateLogo(document, "BRD")); //[1]
+                CompletableFuture.supplyAsync(() -> validateLogo(document, "BRD"), ocrExecutor); //[1]
         CompletableFuture<Boolean> approvalValidation =
-                CompletableFuture.supplyAsync(() -> validateApprovalBRD(document)); //[2]
+                CompletableFuture.supplyAsync(() -> validateApprovalBRD(document), ocrExecutor); //[2]
         CompletableFuture<Boolean> tocValidation =
-                CompletableFuture.supplyAsync(() -> validateTableOfContentBRD(document)); //[3]
+                CompletableFuture.supplyAsync(() -> validateTableOfContentBRD(document), ocrExecutor); //[3]
 
         CompletableFuture<List<Map<Object, Object>>> finalTableOfContent =
                 tocValidation.thenCompose(valid -> {

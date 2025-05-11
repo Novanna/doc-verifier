@@ -9,5 +9,5 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - JAVA_OPTS=-Xms512m -Xmx1024m
+      - JAVA_OPTS=-Xms512m -Xmx2G -XX:+UseG1GC
     restart: unless-stopped

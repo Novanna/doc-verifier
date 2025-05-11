@@ -1,6 +1,5 @@
 package binus.thesis.docverifier.common;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
@@ -9,11 +8,15 @@ import org.springframework.stereotype.Component;
 
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -26,6 +29,13 @@ public class Helper {
     public static Double getPageHeight() {
         return PAGE_HEIGHT;
     }
+    public static final ExecutorService ocrExecutor =
+            Executors.newFixedThreadPool(
+                    Math.max(4, Runtime.getRuntime().availableProcessors() * 2)
+            );
+    private final ConcurrentHashMap<Integer, ReentrantLock> pageLocks = new ConcurrentHashMap<>();
+
+
 
     protected static final int PAGE_COVER = 1;
     public enum BRD_CONTENT {
@@ -60,27 +70,53 @@ public class Helper {
         LESSON_LEARNED
     }
 
-    protected ObjectMapper mapper = new ObjectMapper();
     protected String ocrProcessResult(PDDocument document, int page,
                                     String regionName, Rectangle2D region) throws IOException {
         //String text = "";
-        PDFTextStripperByArea stripper = new PDFTextStripperByArea();
-        stripper.setSortByPosition(true);
-        stripper.addRegion(regionName, region);
-        stripper.extractRegions(document.getPage(page - 1));
-        //text = stripper.getTextForRegion(regionName).trim();
-        //log.info("[CHECK POINT] regionName: {} -> {} ", regionName, text);
-        return stripper.getTextForRegion(regionName).trim();
+        ReentrantLock lock = pageLocks.computeIfAbsent(page, k -> new ReentrantLock());
+        lock.lock();
+
+        //synchronized(document) {
+        try {
+            PDFTextStripperByArea stripper = new PDFTextStripperByArea();
+            stripper.setSortByPosition(true);
+            stripper.addRegion(regionName, region);
+            stripper.extractRegions(document.getPage(page - 1));
+            return stripper.getTextForRegion(regionName).trim();
+        } //}
+        finally {
+            lock.unlock();
+        }
     }
 
     protected Boolean validateLogo (PDDocument document, String type) {
-        Boolean logoValid = validateArea(document, PAGE_COVER, "LOGO",
-                new Rectangle2D.Double(-68.0, getPageHeight() - 608.16 - 167.7, 200.7, 167.7));
+//        Boolean logoValid = validateArea(document, PAGE_COVER, "LOGO",
+//                new Rectangle2D.Double(-68.0, getPageHeight() - 608.16 - 167.7, 200.7, 167.7));
         //log.info("Is Logo Valid: {}", logoValid);
-        Boolean titleValid = validateArea(document, PAGE_COVER, "TITLE_" + type,
-                new Rectangle2D.Double(-68.0, getPageHeight() - 298.4 - 300.1, 612.0, 300.1));
+//        Boolean titleValid = validateArea(document, PAGE_COVER, "TITLE_" + type,
+//                new Rectangle2D.Double(-68.0, getPageHeight() - 298.4 - 300.1, 612.0, 300.1));
         //log.info("Is Title Valid: {}", titleValid);
-        return logoValid && titleValid;
+//        return logoValid && titleValid;
+
+        CompletableFuture<Boolean> logoValid =
+                CompletableFuture.supplyAsync(() ->
+                        validateArea(document, PAGE_COVER, "LOGO",
+                                new Rectangle2D.Double(
+                                        -68.0,
+                                        getPageHeight() - 608.16 - 167.7,
+                                        200.7,
+                                        167.7)),
+                        ocrExecutor);
+        CompletableFuture<Boolean> titleValid =
+                CompletableFuture.supplyAsync(() ->
+                                validateArea(document, PAGE_COVER, "LOGO",
+                                        new Rectangle2D.Double(
+                                                -68.0,
+                                                getPageHeight() - 298.4 - 300.1,
+                                                612.0,
+                                                300.1)),
+                        ocrExecutor);
+        return logoValid.join() && titleValid.join();
     }
 
     protected Rectangle2D.Double getRectangledArea(PDDocument document,
@@ -149,13 +185,7 @@ public class Helper {
     protected Boolean isAtSamePage(Object currentPage, Object nextPage){
         return currentPage.equals(nextPage);
     }
-
-    protected String getTime() {
-        LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter
-                .ofPattern("yyyyMMddHHmmss");
-        return now.format(formatter);
-    }
+//
 
     public Boolean detailCriteriaOfRegion(String regionName,
                                           String textCaptured) {
@@ -182,10 +212,8 @@ public class Helper {
             String contentAsText = content.name()
                     .replace("_", " ");
             boolean found = false;
-            for (int i = 0; i < onListText.size(); i++){
-                //log.info("[2] checkAllContentBRD | comparing: {} <> with {}",
-                //        onListText.get(i).trim(),
-                //        contentAsText);
+            int size = onListText.size();
+            for (int i = 0; i < size; i++){
                 if (onListText
                         .get(i).trim()
                         .equals(contentAsText)) {
@@ -208,7 +236,8 @@ public class Helper {
             String contentAsText = content.name()
                     .replace("_", " ");
             boolean found = false;
-            for (int i = 0; i < onListText.size(); i++){
+            int size = onListText.size();
+            for (int i = 0; i < size; i++){
                 if (onListText.get(i).trim().equals(contentAsText)) {
                     found = true;
                     break;
@@ -225,7 +254,8 @@ public class Helper {
             String contentAsText = content.name()
                     .replace("_", " ");
             boolean found = false;
-            for (int i = 0; i < onListText.size(); i++){
+            int size = onListText.size();
+            for (int i = 0; i < size; i++){
                 if (onListText.get(i).trim().equals(contentAsText)) {
                     found = true;
                     break;
@@ -252,28 +282,6 @@ public class Helper {
         return sectionTitles;
     }
 
-
-//    protected Boolean checkAllContentBRD(String textCaptured) {
-//        String remainingText = textCaptured.toLowerCase();
-//
-//        for (BRD_CONTENT content : BRD_CONTENT.values()) {
-//            String contentAsText = content.name()
-//                    .replace("_", " ")
-//                    .toLowerCase();
-//
-//            int index = remainingText.indexOf(contentAsText);
-//            if (index == -1) {
-//                //log.warn("[Missing] BRD content '{}' not found in Table of Content", contentAsText);
-//                return false;
-//            }
-//
-//            // Cut remaining text from the end of the matched key to avoid overlap
-//            remainingText = remainingText.substring(index + contentAsText.length());
-//        }
-//
-//        return true;
-//    }
-
     protected Boolean validateEachContent(PDDocument document, List<Map<Object, Object>> tocData,
                                         String startKey, String endKey) {
         try {
@@ -289,7 +297,6 @@ public class Helper {
                 String title = (String) entry.get("title");
                 if (!isCollecting && title.toUpperCase()
                         .contains(startKey.toUpperCase())) {
-                    //log.info("title: {} | startKey: {}", title.toUpperCase(), startKey.toUpperCase());
                     isCollecting = true;
                 }
                 if (isCollecting) {
@@ -301,13 +308,9 @@ public class Helper {
                     listOfContent.add(entry);
                 }
             }
-            //log.info("listOfContent from [{}] to [{}] => {}",
-            //        startKey, endKey,
-            //        mapper.writeValueAsString(listOfContent));
             List<Boolean> validations = new ArrayList<>();
-
-            //log.info("Size listOfContent: {}", listOfContent.size());
-            for (int i = 0; i < listOfContent.size(); i++) {
+            int size = listOfContent.size();
+            for (int i = 0; i < size; i++) {
                 Map<Object, Object> current = listOfContent.get(i);
                 Map<Object, Object> next = (i + 1 < listOfContent.size()) ?
                         listOfContent.get(i + 1) : listOfContent.get(i);
@@ -328,8 +331,6 @@ public class Helper {
                         area);
                 validations.add(result);
             }
-            //log.info("Result validation from [{}] to [{}] : {}",
-            //        startKey, endKey, mapper.writeValueAsString(validations));
             return validations.stream().allMatch(valid -> valid);
         } catch (Exception e) {
             log.info("Something wrong at validateEachContent: {}", e.getMessage());

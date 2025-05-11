@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 import java.awt.geom.Rectangle2D;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,11 +20,11 @@ public class CheckerPVT extends Helper {
         log.info(">>>>>>>>> [PVT DOCUMENT ON CHECK] <<<<<<<<<<");
         // Execute tasks concurrently
         CompletableFuture<Boolean> logoValidation =
-                CompletableFuture.supplyAsync(() -> validateLogo(document, "PVT")); //[1]
+                CompletableFuture.supplyAsync(() -> validateLogo(document, "PVT"), ocrExecutor); //[1]
         CompletableFuture<Boolean> approvalValidation =
-                CompletableFuture.supplyAsync(() -> validateApprovalPVT(document)); //[2]
+                CompletableFuture.supplyAsync(() -> validateApprovalPVT(document), ocrExecutor); //[2]
         CompletableFuture<Boolean> tocValidation =
-                CompletableFuture.supplyAsync(() -> validateTableOfContentPVT(document)); //[3]
+                CompletableFuture.supplyAsync(() -> validateTableOfContentPVT(document), ocrExecutor); //[3]
 
         CompletableFuture<List<Map<Object, Object>>> finalTableOfContent =
                 tocValidation.thenCompose(valid -> {
@@ -187,7 +189,7 @@ public class CheckerPVT extends Helper {
                     "TABLE OF CONTENT", "HEADER_CONTENT_PVT", document,
                     new Rectangle2D.Double(200.0, 45.0, 200.0, 70.0));
             String tocContent = ocrProcessResult(document,
-                    tocPage, "CONTENT_PVT",
+                    tocPage, "CONTENTPVT",
                     new Rectangle2D.Double(54.50, 97.38, 482.10, 604.10));
 
             tocContent = tocContent.replaceAll("[\\r\\n]+", "\n");  // normalize line breaks

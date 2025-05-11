@@ -6,8 +6,6 @@ import binus.thesis.docverifier.common.CheckerUAT;
 import binus.thesis.docverifier.common.Helper;
 import binus.thesis.docverifier.model.ResponseModel;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.pdfbox.io.RandomAccessBufferedFileInputStream;
-import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -16,11 +14,12 @@ import org.springframework.util.StopWatch;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
 @Slf4j
-public class AppServiceImpl extends Helper implements AppService {
+public class AppServiceImpl implements AppService {
 
     /*
         README:
@@ -55,15 +54,17 @@ public class AppServiceImpl extends Helper implements AppService {
         try {
             // 1. Collect the document
             log.info("File masuk: " + docFile.getOriginalFilename());
+            DateTimeFormatter formatter = DateTimeFormatter
+                .ofPattern("yyyyMMddHHmmss");
             tempFile = new File(System.getProperty("java.io.tmpdir")
-                    + File.separator + getTime() + "_in.pdf");
+                    + File.separator + formatter + "_in.pdf");
             docFile.transferTo(tempFile);
             log.info("File temp: " + tempFile.getName());
-            //PDFParser parser = new PDFParser(new RandomAccessBufferedFileInputStream(tempFile));
-            //parser.setLenient(true); // add toleran for minor error
-            //parser.parse();
-            //PDDocument document = parser.getPDDocument();
-            PDDocument document = PDDocument.load(tempFile);
+            PDDocument document = PDDocument.load(
+                    tempFile);
+                    //MemoryUsageSetting.setupTempFileOnly()
+                    //MemoryUsageSetting.setupMixed(2 * 1024 * 1024)
+            //);
             // 2. Measure Height
             PDRectangle rect = document.getPage(0).getMediaBox();
             log.info("Cover Page dimensions: width = {} points, height = {} points",
