@@ -65,12 +65,7 @@ public class AppServiceImpl implements AppService {
                     //MemoryUsageSetting.setupTempFileOnly()
                     //MemoryUsageSetting.setupMixed(2 * 1024 * 1024)
             //);
-            // 2. Measure Height
-            PDRectangle rect = document.getPage(0).getMediaBox();
-            log.info("Cover Page dimensions: width = {} points, height = {} points",
-                    rect.getWidth(), rect.getHeight());
-            PAGE_HEIGHT = rect.getHeight();
-            Helper.setPageHeight(PAGE_HEIGHT);
+
             // 3. Go To Verification Process Based on Type
             if (docType.trim().equalsIgnoreCase("BRD")) {
                 validationResult = new CheckerBRD().processBRD(document);

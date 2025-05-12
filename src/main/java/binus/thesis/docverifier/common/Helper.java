@@ -9,14 +9,12 @@ import org.springframework.stereotype.Component;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -75,7 +73,6 @@ public class Helper {
         //String text = "";
         ReentrantLock lock = pageLocks.computeIfAbsent(page, k -> new ReentrantLock());
         lock.lock();
-
         //synchronized(document) {
         try {
             PDFTextStripperByArea stripper = new PDFTextStripperByArea();
@@ -90,33 +87,31 @@ public class Helper {
     }
 
     protected Boolean validateLogo (PDDocument document, String type) {
-//        Boolean logoValid = validateArea(document, PAGE_COVER, "LOGO",
-//                new Rectangle2D.Double(-68.0, getPageHeight() - 608.16 - 167.7, 200.7, 167.7));
-        //log.info("Is Logo Valid: {}", logoValid);
-//        Boolean titleValid = validateArea(document, PAGE_COVER, "TITLE_" + type,
-//                new Rectangle2D.Double(-68.0, getPageHeight() - 298.4 - 300.1, 612.0, 300.1));
-        //log.info("Is Title Valid: {}", titleValid);
-//        return logoValid && titleValid;
+        Boolean logoValid = validateArea(document, PAGE_COVER, "LOGO",
+                new Rectangle2D.Double(-68.0, getPageHeight() - 608.16 - 167.7, 200.7, 167.7));
+        Boolean titleValid = validateArea(document, PAGE_COVER, "TITLE_" + type,
+                new Rectangle2D.Double(-68.0, getPageHeight() - 298.4 - 300.1, 612.0, 300.1));
+        return logoValid && titleValid;
 
-        CompletableFuture<Boolean> logoValid =
-                CompletableFuture.supplyAsync(() ->
-                        validateArea(document, PAGE_COVER, "LOGO",
-                                new Rectangle2D.Double(
-                                        -68.0,
-                                        getPageHeight() - 608.16 - 167.7,
-                                        200.7,
-                                        167.7)),
-                        ocrExecutor);
-        CompletableFuture<Boolean> titleValid =
-                CompletableFuture.supplyAsync(() ->
-                                validateArea(document, PAGE_COVER, "LOGO",
-                                        new Rectangle2D.Double(
-                                                -68.0,
-                                                getPageHeight() - 298.4 - 300.1,
-                                                612.0,
-                                                300.1)),
-                        ocrExecutor);
-        return logoValid.join() && titleValid.join();
+//        CompletableFuture<Boolean> logoValid =
+//                CompletableFuture.supplyAsync(() ->
+//                        validateArea(document, PAGE_COVER, "LOGO",
+//                                new Rectangle2D.Double(
+//                                        -68.0,
+//                                        getPageHeight() - 608.16 - 167.7,
+//                                        200.7,
+//                                        167.7)),
+//                        ocrExecutor);
+//        CompletableFuture<Boolean> titleValid =
+//                CompletableFuture.supplyAsync(() ->
+//                                validateArea(document, PAGE_COVER, "TITLE_" + type,
+//                                        new Rectangle2D.Double(
+//                                                -68.0,
+//                                                getPageHeight() - 298.4 - 300.1,
+//                                                612.0,
+//                                                300.1)),
+//                        ocrExecutor);
+//        return logoValid.join() && titleValid.join();
     }
 
     protected Rectangle2D.Double getRectangledArea(PDDocument document,
@@ -390,24 +385,8 @@ public class Helper {
     
     protected Boolean pageKeywordCheck(String text,
                                      String keyWord){
-//        if (!text.isEmpty() && text.toUpperCase().contains(keyWord.toUpperCase())) {
-//            return true;
-//        } else {
-//            return false;
-//        }
-        return !text.isEmpty() && text.toUpperCase().contains(keyWord.toUpperCase());
+        return !text.isEmpty() &&
+                text.toUpperCase().contains(keyWord.toUpperCase());
     }
 
-//    protected  Integer findPageForTitle(List<Map<Object, Object>> tocData, String searchTitle) {
-//        Integer result = 0;
-//        String title = "";
-//        for (Map<Object, Object> entry : tocData) {
-//            title = (String) entry.get("title");
-//            if (title.toUpperCase().contains(searchTitle.toUpperCase())) {
-//                result = (Integer) entry.get("page");
-//                //log.info("findPageForTitle: {} found at {}", title, result);
-//            }
-//        }
-//        return result;
-//    }
 }

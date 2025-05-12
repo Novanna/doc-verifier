@@ -3,6 +3,7 @@ package binus.thesis.docverifier.common;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.springframework.stereotype.Component;
 
 import java.awt.geom.Rectangle2D;
